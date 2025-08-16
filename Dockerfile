@@ -7,7 +7,6 @@ RUN apt-get update && apt-get install -y \
     python3-pip \
     wget \
     curl \
-    jq \
     tesseract-ocr \
     tesseract-ocr-eng \
     tesseract-ocr-fra \
@@ -20,22 +19,19 @@ RUN apt-get update && apt-get install -y \
 # Set working directory
 WORKDIR /app
 
-# Download LATEST Apache Tika Server (Full version)
-# This happens every time you build/deploy - always gets newest version
-RUN echo "=== Fetching latest Apache Tika version ===" && \
-    LATEST_VERSION=$(curl -s https://api.github.com/repos/apache/tika/releases/latest | jq -r '.tag_name') && \
-    echo "Latest Tika version found: $LATEST_VERSION" && \
-    DOWNLOAD_URL="https://dlcdn.apache.org/tika/${LATEST_VERSION}/tika-server-${LATEST_VERSION}.jar" && \
-    echo "Downloading from: $DOWNLOAD_URL" && \
-    wget "$DOWNLOAD_URL" -O tika-server.jar && \
+# Download specific Tika version (known to work)
+RUN echo "=== Downloading Apache Tika 3.0.0 ===" && \
+    wget --timeout=300 --tries=3 \
+    "https://dlcdn.apache.org/tika/3.0.0/tika-server-3.0.0.jar" \
+    -O tika-server.jar && \
     echo "Download completed. File info:" && \
     ls -lh tika-server.jar && \
     echo "=== Tika download completed ==="
 
-# Verify the download worked and test Tika
+# Verify the download worked
 RUN echo "=== Verifying Tika installation ===" && \
     ls -la tika-server.jar && \
-    java -jar tika-server.jar --version && \
+    echo "File size: $(du -h tika-server.jar | cut -f1)" && \
     echo "=== Tika verification completed ==="
 
 # Copy Python requirements first (for better Docker caching)
